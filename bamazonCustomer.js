@@ -15,26 +15,29 @@ var connection = mysql.createConnection({
 });
 
 connection.connect(function(err){
-	if (err) {
-		throw err;
-	}
+	if (err) throw err;
 	runDisplayItems();
 });
 
 var availableItems = [];
 
 var runDisplayItems = function() {
-	var query = "SELECT item_id, product_name, price FROM products";
+	var query = "SELECT item_id, product_name, price, stock_quantity FROM products";
 
 	// callback function
 	// arguments such as query is executed before the callback function(err, res)
 	// once the query is fullfilled then callback function(err, res) is executed
 	// put connection.end inside the call back function so it does not end connection before query is fullfilled
 	connection.query(query, function(err, res) {
+		// loop through all items in inventory
 		for (let i=0; i<res.length; i++) {
-			console.log(res[i].item_id + " " + res[i].product_name + " " + res[i].price);
-			availableItems.push(res[i].item_id);
-			// stockItems.push(res[i].stock_quantity);
+			// display only items in stock
+			if (res[i].stock_quantity !== 0) {
+				console.log(res[i].item_id + " - " + res[i].product_name + " || $ " + res[i].price);
+				availableItems.push(res[i].item_id);
+			} else {
+				// console.log(res[i].item_id + " Item depleted");
+			}
 		}
 		runAskCustomer();
 		// connection.end();
@@ -113,16 +116,24 @@ function runCheckInventory(item_id, item_quant) {
 					console.log("Your order will ship in 2-3 days");
 					console.log("Thanks for your support, Have a great day!");
 					console.log("===------------------------===");
-					runUpdateInventory(item_id, item_quant);
+					var itemsLeft = res[0].stock_quantity - item_quant;
+					console.log(itemsLeft)
+					runUpdateInventory(item_id, itemsLeft);
 				}
 
-				connection.end();
+				// connection.end();
 			})
 	
 }
 
-function runUpdateInventory(item_id, item_quant) {
+function runUpdateInventory(item_id, itemsLeft) {
 	console.log("answer.item_id: " + item_id);
-	console.log("answer.item_quant: " + item_quant);
+	// console.log("answer.item_quant: " + item_quant);
+	var query = "UPDATE products SET ? WHERE ?";
+	connection.query(query, [{stock_quantity: itemsLeft},{item_id: item_id}],
+		function(err, res){
+			if (err) throw err;
+		});
+	connection.end();
 }
 
