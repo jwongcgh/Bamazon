@@ -1,52 +1,67 @@
-var fs = require("fs");
+'use strict';
 
 var mysql = require("mysql");
 var inquirer = require("inquirer");
 
+// table formatting npm
+var Table = require("cli-table");
+
 var connection = mysql.createConnection({
 	host: "localhost",
 	port: 3306,
-
 	user: "root",
-
-	password: "password here",
+	password: "",
 	database: "Bamazon"
-
 });
 
+// establishing mysql connection
 connection.connect(function(err){
 	if (err) throw err;
 	runDisplayItems();
 });
 
+// store stock available items_id in an array
 var availableItems = [];
 
-var runDisplayItems = function() {
-	var query = "SELECT item_id, product_name, price, stock_quantity FROM products";
+// createin an instance of Table
+var table = new Table ({
+	head: ['id', 'Product', 'Price'],
+	// colWidths: [4, 60, 8],
+	colAligns: ['right', 'left', 'right']
+});
 
-	// callback function
-	// arguments such as query is executed before the callback function(err, res)
-	// once the query is fullfilled then callback function(err, res) is executed
-	// put connection.end inside the call back function so it does not end connection before query is fullfilled
+var runDisplayItems = function() {
+	// reading mysql database
+	var query = "SELECT item_id, product_name, price FROM products";
+
 	connection.query(query, function(err, res) {
+		console.log("===------------------------===");
 		// loop through all items in inventory
 		for (let i=0; i<res.length; i++) {
-			// display only items in stock
+			// display only items currently in stock, if zero in stock will skip item
 			if (res[i].stock_quantity !== 0) {
-				console.log(res[i].item_id + " - " + res[i].product_name + " || $ " + res[i].price);
+				// no table format display
+				// console.log(res[i].item_id + " - " + res[i].product_name + " || $ " + res[i].price);
+				// filling up item-id array
 				availableItems.push(res[i].item_id);
+				// filling up table
+				table.push(
+					[res[i].item_id, res[i].product_name, res[i].price.toFixed(2)]
+				);
 			} else {
 				// console.log(res[i].item_id + " Item depleted");
 			}
+			
 		}
+		console.log(table.toString());
+		// console.log("===------------------------===");
 		runAskCustomer();
 		// connection.end();
 	});
 }
 
-
 function runAskCustomer() {
-	console.log(availableItems);
+	// console.log(availableItems);
 	inquirer.prompt ([
 		{
 			type: "input",
@@ -58,10 +73,7 @@ function runAskCustomer() {
 				var done = this.async();
 				// Do async stuff
 				setTimeout(function(){
-					// console.log(typeof availableItems.indexOf(input));
-					// console.log(typeof input);
-					// console.log(" " + availableItems.indexOf(parseInt(input)));
-					// checking if input id is found in availableItems id array
+					// checking if user input for item_id is found in availableItems item_id array
 					if (availableItems.indexOf(parseInt(input)) == -1 ) {
 						// pass the return value in the done callback
 						done('Please provide a valid product id');
@@ -90,19 +102,17 @@ function runAskCustomer() {
 			}
 		}
 		]).then(function(answer) {
-
-			console.log("answer.item_id: " + answer.item_id);
-			console.log("answer.item_quant: " + answer.item_quant);
+			// console.log("answer.item_id: " + answer.item_id);
+			// console.log("answer.item_quant: " + answer.item_quant);
 			runCheckInventory(answer.item_id, answer.item_quant);
 		});
 }
 
 function runCheckInventory(item_id, item_quant) {
 	var query = "SELECT item_id, product_name, stock_quantity, price FROM products WHERE ?";
-			connection.query(query, {item_id: item_id}, function(err, res) {
-				
-				console.log(typeof parseInt(item_id));	// string
-				console.log(res[0]);
+			connection.query(query, {item_id: item_id}, function(err, res) {	
+				// console.log(typeof parseInt(item_id));	// string
+				// checking if number of items ordered is in stock
 				if (res[0].stock_quantity < parseInt(item_quant)) {
 					console.log("Sorry! Only " + res[0].stock_quantity + " left in stock");
 				} else {
@@ -116,21 +126,17 @@ function runCheckInventory(item_id, item_quant) {
 					console.log("Your order will ship in 2-3 days");
 					console.log("Thanks for your support, Have a great day!");
 					console.log("===------------------------===");
-					var itemsLeft = res[0].stock_quantity - item_quant;
-					console.log(itemsLeft)
-					runUpdateInventory(item_id, itemsLeft);
+					var stockLeft = res[0].stock_quantity - item_quant;
+					runUpdateInventory(item_id, stockLeft);
 				}
-
 				// connection.end();
 			})
 	
 }
 
-function runUpdateInventory(item_id, itemsLeft) {
-	console.log("answer.item_id: " + item_id);
-	// console.log("answer.item_quant: " + item_quant);
+function runUpdateInventory(item_id, stockLeft) {
 	var query = "UPDATE products SET ? WHERE ?";
-	connection.query(query, [{stock_quantity: itemsLeft},{item_id: item_id}],
+	connection.query(query, [{stock_quantity: stockLeft},{item_id: item_id}],
 		function(err, res){
 			if (err) throw err;
 		});
