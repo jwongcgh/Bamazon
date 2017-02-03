@@ -115,6 +115,7 @@ function runCheckInventory(item_id, item_quant) {
 				// checking if number of items ordered is in stock
 				if (res[0].stock_quantity < parseInt(item_quant)) {
 					console.log("Sorry! Only " + res[0].stock_quantity + " left in stock");
+					connection.end();
 				} else {
 					var total = item_quant * res[0].price;
 					console.log("===------------------------===");
@@ -128,10 +129,8 @@ function runCheckInventory(item_id, item_quant) {
 					console.log("===------------------------===");
 					var stockLeft = res[0].stock_quantity - item_quant;
 					runUpdateInventory(item_id, stockLeft);
-				}
-				// connection.end();
+				}	
 			})
-	
 }
 
 function runUpdateInventory(item_id, stockLeft) {
