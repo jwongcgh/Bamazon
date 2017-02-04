@@ -3,7 +3,6 @@
 var mysql = require('mysql');
 var inquirer = require('inquirer');
 var Table = require("cli-table");
-// var Table = require("console.table");
 
 var connection = mysql.createConnection({
     host: "localhost",
@@ -44,7 +43,7 @@ function runManager() {
         	// checks user choice against inventory id stored in available items array
             trackViewTask = "Add to Inventory";
             runViewInventory(trackViewTask);
-            return userChoice.task == "Add to Inventory"
+            return userChoice.task == "Add to Inventory";
         },
         type: "input",
         message: "Enter item_id",
@@ -52,7 +51,6 @@ function runManager() {
         validate: function(input) {
             var done = this.async();
             setTimeout(function() {
-                console.log(availableItems.indexOf(parseInt(input)));
                 if (availableItems.indexOf(parseInt(input)) == -1) {
                     // pass the return value in the done callback
                     done('Please provide a valid product id');
@@ -72,7 +70,8 @@ function runManager() {
             var done = this.async();
             setTimeout(function() {
                 if (!input) {
-                    done('Product name has to be entered')
+                    done('Product name has to be entered');
+                    return;
                 }
                 done(null, true);
             }, 200);
@@ -89,6 +88,7 @@ function runManager() {
             setTimeout(function() {
                 if (!input) {
                     done('Enter product department');
+                    return;
                 }
                 done(null, true);
             }, 200);
@@ -122,8 +122,8 @@ function runManager() {
             // validateNumber(input);
             var done = this.async();
             setTimeout(function() {
-                if (isNaN(input) || input <= 0) {
-                    done('Provide a valid number other than 0');
+                if (isNaN(input) || input <= 0 || (input%1) !== 0) {
+                    done('Provide a valid amount');
                     return;
                 }
                 done(null, true);
@@ -198,7 +198,7 @@ function runViewInventory(trackViewTask) {
             connection.end();
         }
 
-    })
+    });
 
 }
 
@@ -217,7 +217,7 @@ function runResupply() {
             ],
             function(err, res) {
                 if (err) throw err;
-                console.log("Updated stock_quantity: " + totalItems);
+                console.log("Updated stock. Total items: " + totalItems);
             });
         connection.end();
     }
@@ -227,7 +227,7 @@ function runAddNewItem() {
     var query = "INSERT INTO products SET ?";
     connection.query(query, updateItem, function(err, res) {
         if (err) throw err;
-        console.log("Product Added")
+        console.log("Product Added");
         connection.end();
     });
 

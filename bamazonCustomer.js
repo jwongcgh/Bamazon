@@ -23,7 +23,7 @@ connection.connect(function(err){
 // store stock available items_id in an array
 var availableItems = [];
 
-// createin an instance of Table
+// create instance of Table
 var table = new Table ({
 	head: ['id', 'Product', 'Price'],
 	// colWidths: [4, 60, 8],
@@ -32,40 +32,34 @@ var table = new Table ({
 
 var runDisplayItems = function() {
 	// reading mysql database
-	var query = "SELECT item_id, product_name, price FROM products";
+	var query = "SELECT item_id, product_name, price, stock_quantity FROM products";
 
 	connection.query(query, function(err, res) {
-		console.log("===------------------------===");
+		
 		// loop through all items in inventory
 		for (let i=0; i<res.length; i++) {
+			
 			// display only items currently in stock, if zero in stock will skip item
-			if (res[i].stock_quantity !== 0) {
-				// no table format display
-				// console.log(res[i].item_id + " - " + res[i].product_name + " || $ " + res[i].price);
+			if (parseInt(res[i].stock_quantity) !== 0) {
 				// filling up item-id array
 				availableItems.push(res[i].item_id);
 				// filling up table
 				table.push(
 					[res[i].item_id, res[i].product_name, res[i].price.toFixed(2)]
 				);
-			} else {
-				// console.log(res[i].item_id + " Item depleted");
-			}
-			
+			}			
 		}
 		console.log(table.toString());
-		// console.log("===------------------------===");
 		runAskCustomer();
 		// connection.end();
 	});
 }
 
 function runAskCustomer() {
-	// console.log(availableItems);
 	inquirer.prompt ([
 		{
 			type: "input",
-			message: "Please enter ID of product you'd like to buy?",
+			message: "Please enter id of product you'd like to buy?",
 			name: 'item_id',
 			// validates data entry/checks that input is a valid entry
 			validate: function(input) {
@@ -102,8 +96,6 @@ function runAskCustomer() {
 			}
 		}
 		]).then(function(answer) {
-			// console.log("answer.item_id: " + answer.item_id);
-			// console.log("answer.item_quant: " + answer.item_quant);
 			runCheckInventory(answer.item_id, answer.item_quant);
 		});
 }
@@ -111,7 +103,6 @@ function runAskCustomer() {
 function runCheckInventory(item_id, item_quant) {
 	var query = "SELECT item_id, product_name, stock_quantity, price FROM products WHERE ?";
 			connection.query(query, {item_id: item_id}, function(err, res) {	
-				// console.log(typeof parseInt(item_id));	// string
 				// checking if number of items ordered is in stock
 				if (res[0].stock_quantity < parseInt(item_quant)) {
 					console.log("Sorry! Only " + res[0].stock_quantity + " left in stock");
@@ -122,15 +113,15 @@ function runCheckInventory(item_id, item_quant) {
 					console.log("Order Summary");
 					console.log("Item: " + res[0].product_name);
 					console.log("Quantity: " + item_quant);
-					console.log("Unit Price: " + res[0].price);
-					console.log("Invoice Total: " + item_quant * res[0].price);
-					console.log("Your order will ship in 2-3 days");
+					console.log("Unit Price: $ " + res[0].price);
+					console.log("Invoice Total: $ " + (item_quant * res[0].price).toFixed(2));
+					console.log("Your order will ship within 2-3 days");
 					console.log("Thanks for your support, Have a great day!");
 					console.log("===------------------------===");
 					var stockLeft = res[0].stock_quantity - item_quant;
 					runUpdateInventory(item_id, stockLeft);
 				}	
-			})
+			});
 }
 
 function runUpdateInventory(item_id, stockLeft) {
