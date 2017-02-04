@@ -1,4 +1,4 @@
 # Bamazon
 
-[bamazonCustomer-VideoLink]("here goes the url link");
+[bamazonCustomer-VideoLink]("https://drive.google.com/drive/folders/0B_imyucfubVZcXlRNTZxQVlwS2M");
 
